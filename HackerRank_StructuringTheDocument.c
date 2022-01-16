@@ -23,9 +23,15 @@ struct document {
     struct paragraph* data;
     int paragraph_count;//denotes number of paragraphs in a document
 };
-struct document get_document(char* text) {
+/*struct document get_document(char* text) {
 
-    int par_count = 0;
+    struct document doc;
+    struct paragraph* cur_par = NULL;
+    struct sentence* cur_sen = NULL;
+    
+    int par_count;
+    int sen_count_in_par;
+    int wor_count_in_sen;
     *text != NULL ? par_count = 1 : exit(1);
     
     for(int i = 0; i < strlen(text); i++) {
@@ -33,44 +39,115 @@ struct document get_document(char* text) {
             par_count++;
     }
     
+    for(int i = 0; i < par_count; i++) {
+        int j = 0;
+        sen_count_in_par = 0;
+        while(text[j] != '\0' && text[j] != '\n') {
+            if(text[j] == '.')
+                sen_count_in_par++;
+            j++;
+        }
+        for(int k = 0; k < sen_count_in_par; k++) {
+                int l = 0;
+                int wor_prev_pos = 0;
+                wor_count_in_sen = 0;
+                while(text[l] != '\0' && text[l] != '.') {
+                    if(text[l] == ' ') {
+                        wor_count_in_sen++;
+                        struct word *wor;
+                        wor->data = malloc((size_t)((l - wor_prev_pos)*sizeof(char)));
+                        //TODO przypisanie liter do komorek malloc
+                        wor_prev_pos = l;
+                    }
+                    l++;
+                }
+
+        }
+    }
+
+    return doc;
+}*/
+
+struct document get_document(char* text)
+{
+    struct document doc;
+    struct paragraph *cur_paragraph = NULL;
+    struct sentence *cur_sentence = NULL;
+    char *new_word = NULL;
+
+    doc.data = NULL;
+    doc.paragraph_count = 0;
+
+    for (char *s = text; *s; ++s)
+    {
+        if (*s == ' ' || *s == '.')
+        {
+            // new paragraph
+            if (cur_paragraph == NULL)
+            {
+                doc.paragraph_count++;
+                doc.data = (struct paragraph *) realloc(doc.data, sizeof(struct paragraph) * doc.paragraph_count);
+
+                cur_paragraph = doc.data + doc.paragraph_count - 1;
+                cur_paragraph->data = NULL;
+                cur_paragraph->sentence_count = 0;
+
+                cur_sentence = NULL;        // we start a sentence again
+            }
+
+            // new sentence
+            if (cur_sentence == NULL)
+            {
+                cur_paragraph->sentence_count++;
+                cur_paragraph->data = (struct sentence *) realloc(cur_paragraph->data, sizeof(struct sentence) * cur_paragraph->sentence_count);
+
+                cur_sentence = cur_paragraph->data + cur_paragraph->sentence_count - 1;
+                cur_sentence->data = NULL;
+                cur_sentence->word_count = 0;
+            }
+
+            // new word
+            cur_sentence->word_count++;
+            cur_sentence->data = (struct word *) realloc(cur_sentence->data, sizeof(struct word) * cur_sentence->word_count);
+            cur_sentence->data[cur_sentence->word_count - 1].data = new_word;
+            new_word = NULL;
+
+            if (*s == '.')
+                cur_sentence = NULL;        // we will start a sentence again
+            *s = 0;
+        }
+
+        else if (*s == '\n')
+        {
+            cur_sentence = NULL;
+            cur_paragraph = NULL;
+        }
+        else
+        {
+            if (new_word == NULL)
+            {
+                new_word = s;
+            }
+        }
+    }
+
+    return doc;
 }
 
-struct word kth_word_in_mth_sentence_of_nth_paragraph(struct document Doc, int k, int m, int n) {
-    
-    struct paragraph par;
-    struct sentence sen;
-    struct word wor;
-    assert(k < Doc.paragraph_count);
-    par = Doc.data[k];
-    assert(m < par.sentence_count);
-    sen = par.data[m];
-    assert(n < sen.word_count);
-    wor = sen.data[n];
-
-    return wor;
+struct word kth_word_in_mth_sentence_of_nth_paragraph(struct document Doc, int k, int m, int n)
+{
+    return Doc.data[n - 1].data[m - 1].data[k - 1];
 }
 
-struct sentence kth_sentence_in_mth_paragraph(struct document Doc, int k, int m) { 
-    
-    struct paragraph par;
-    struct sentence sen;
-    assert(k < Doc.paragraph_count);
-    par = Doc.data[k];
-    assert(m < par.sentence_count);
-    sen = par.data[m];
-
-    return sen;
+struct sentence kth_sentence_in_mth_paragraph(struct document Doc, int k, int m)
+{
+    return Doc.data[m - 1].data[k - 1];
 }
 
-struct paragraph kth_paragraph(struct document Doc, int k) {
-    
-    struct paragraph par;
-    assert(k < Doc.paragraph_count);
-    par = Doc.data[k];
-
-    return par;
+struct paragraph kth_paragraph(struct document Doc, int k)
+{
+    return Doc.data[k - 1];
 }
-
 
 void print_word(struct word w) {
     printf("%s", w.data);
@@ -154,3 +231,4 @@ int main()
         printf("\n");
     }     
 }
+
